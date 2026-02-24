@@ -1,0 +1,65 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("RENTER") // OWNER or RENTER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  spaces   Space[]
+  bookings Booking[]
+}
+
+model Space {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  address      String
+  latitude     Float
+  longitude    Float
+  pricePerHour Float
+  imageUrl     String?
+  isAvailable  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ownerId  String
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([ownerId])
+  @@index([latitude, longitude])
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  startTime   DateTime
+  endTime     DateTime
+  totalAmount Float
+  status      String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED, COMPLETED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spaceId String
+  space   Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  stripePaymentIntentId String?
+
+  @@index([userId])
+  @@index([spaceId])
+  @@index([startTime, endTime])
+}
